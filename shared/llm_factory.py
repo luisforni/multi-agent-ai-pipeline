@@ -56,19 +56,20 @@ def get_llm(
     )
 
 
-_CREWAI_PREFIX = {
-    "openai": "openai",
-    "anthropic": "anthropic",
-    "groq": "groq",
-    "ollama": "ollama",
-}
-
-
 def get_crewai_llm(
     provider: str | None = None,
     model: str | None = None,
-) -> str:
+):
+    from crewai import LLM
     provider = provider or settings.LLM_PROVIDER
     model = model or settings.get_model()
-    prefix = _CREWAI_PREFIX.get(provider, provider)
-    return f"{prefix}/{model}"
+
+    if provider == "openai":
+        return LLM(model=f"openai/{model}", api_key=settings.OPENAI_API_KEY or None)
+    if provider == "anthropic":
+        return LLM(model=f"anthropic/{model}", api_key=settings.ANTHROPIC_API_KEY or None)
+    if provider == "groq":
+        return LLM(model=f"groq/{model}", api_key=settings.GROQ_API_KEY or None)
+    if provider == "ollama":
+        return LLM(model=f"ollama/{model}", base_url=settings.OLLAMA_BASE_URL)
+    raise ValueError(f"Unknown LLM provider: {provider!r}")

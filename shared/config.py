@@ -40,7 +40,7 @@ class Settings:
         "openai": "gpt-4o",
         "anthropic": "claude-opus-4-6",
         "groq": "llama-3.3-70b-versatile",
-        "ollama": "llama3",
+        "ollama": "llama3.1",
     }
 
     @classmethod

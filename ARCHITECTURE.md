@@ -69,7 +69,7 @@ Esta es una API Route de Next.js que se ejecuta en el servidor (no en el navegad
 
 1. Lee `process.env.ORCHESTRATOR_URL` (en Docker = `http://orchestrator:9000`)
 2. Extrae el body JSON de la petición entrante
-3. Hace un `fetch` al orchestrator: `POST http://orchestrator:9000/pipeline/run`
+3. Abre una conexión TCP directa al orchestrator con `http.request` de Node.js (sin timeout) para soportar LLMs locales lentos como Ollama
 4. Devuelve la respuesta del orchestrator al cliente con el mismo status HTTP
 
 ---
@@ -155,7 +155,7 @@ content_task   = Task(agent=generator,  context=[summarize_task], ...)
 
 El parámetro `context=[prev_task]` hace que CrewAI inyecte automáticamente el output de la tarea anterior en el prompt de la siguiente.
 
-### Ejecución
+### Ejecución y extracción de fuentes
 
 ```python
 crew = Crew(agents=[...], tasks=[...], process=Process.sequential)
@@ -163,6 +163,8 @@ crew.kickoff()
 ```
 
 CrewAI ejecuta las tres tareas en orden. Al finalizar, cada `Task` tiene su `output.raw` con el resultado.
+
+A continuación, `run_pipeline_crewai()` llama a `extract_sources(research_text)` para extraer programáticamente las URLs reales del output del researcher (patrón `URL: https://...`) y las agrega al final del contenido como sección `**Sources:**`. Esto garantiza que las referencias sean siempre URLs reales, independientemente de la capacidad del LLM local para recordarlas.
 
 ---
 
@@ -235,6 +237,8 @@ app = graph.compile()
 final_state = app.invoke(initial_state)
 ```
 
+Tras la invocación, `run_pipeline_graph()` llama a `extract_sources(final_state["research"])` para extraer las URLs reales y las agrega al contenido final como sección `**Sources:**`.
+
 ---
 
 ## Paso 5 — Herramientas de investigación
@@ -258,6 +262,10 @@ Decorada con `@tool` de CrewAI. Lógica:
 4. Extrae texto plano con `get_text(separator="\n")`
 5. Colapsa líneas en blanco repetidas con regex
 6. Devuelve los primeros 3000 caracteres
+
+### `extract_sources(text)`
+
+Función auxiliar (no es `@tool`). Extrae todas las URLs reales del output de `web_search` usando el patrón `URL: https://...` con regex. Deduplica y devuelve una lista ordenada de strings. Es llamada por el orchestrator tras completar el pipeline para construir la sección `**Sources:**` del contenido final.
 
 ---
 
@@ -298,7 +306,7 @@ El componente `ResultPanel` (`pipeline-web-ui/src/components/ResultPanel.tsx`) r
 | Frontend | `pipeline-web-ui/src/app/page.tsx` | Estado, formulario, llamada al API, renderizado de resultados |
 | Frontend | `pipeline-web-ui/src/components/PipelineForm.tsx` | Formulario controlado con todos los parámetros del pipeline |
 | Frontend | `pipeline-web-ui/src/components/ResultPanel.tsx` | Panel de resultados con pestañas y copia |
-| Proxy | `pipeline-web-ui/src/app/api/pipeline/run/route.ts` | Proxy server-side al orchestrator |
+| Proxy | `pipeline-web-ui/src/app/api/pipeline/run/route.ts` | Proxy server-side al orchestrator vía `http.request` (sin timeout) |
 | API Gateway | `agent-orchestrator/src/api.py` | Validación, despacho al motor, respuesta |
 | Motor CrewAI | `agent-orchestrator/src/crew.py` | Pipeline secuencial con 3 agentes CrewAI |
 | Motor LangGraph | `agent-orchestrator/src/graph.py` | Pipeline stateful con StateGraph |

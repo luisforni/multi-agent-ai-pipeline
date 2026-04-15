@@ -3,6 +3,8 @@ x-common: &common
   env_file: .env
   networks:
     - pipeline
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 services:
   orchestrator:
