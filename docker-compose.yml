@@ -1,0 +1,62 @@
+x-common: &common
+  restart: unless-stopped
+  env_file: .env
+  networks:
+    - pipeline
+
+services:
+  orchestrator:
+    <<: *common
+    build:
+      context: .
+      dockerfile: agent-orchestrator/Dockerfile
+    ports:
+      - "${ORCHESTRATOR_PORT:-9000}:9000"
+    depends_on:
+      - researcher
+      - summarizer
+      - content-generator
+    environment:
+      RESEARCHER_URL: http://researcher:9001
+      SUMMARIZER_URL: http://summarizer:9002
+      CONTENT_GENERATOR_URL: http://content-generator:9003
+
+  researcher:
+    <<: *common
+    build:
+      context: .
+      dockerfile: agent-researcher/Dockerfile
+    ports:
+      - "${RESEARCHER_PORT:-9001}:9001"
+
+  summarizer:
+    <<: *common
+    build:
+      context: .
+      dockerfile: agent-summarizer/Dockerfile
+    ports:
+      - "${SUMMARIZER_PORT:-9002}:9002"
+
+  content-generator:
+    <<: *common
+    build:
+      context: .
+      dockerfile: agent-content-generator/Dockerfile
+    ports:
+      - "${CONTENT_GENERATOR_PORT:-9003}:9003"
+
+  web:
+    <<: *common
+    build:
+      context: ./pipeline-web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - orchestrator
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:9000
+
+networks:
+  pipeline:
+    driver: bridge

@@ -1,0 +1,15 @@
+[submodule "agent-researcher"]
+	path = agent-researcher
+	url = https://github.com/luisforni/agent-researcher.git
+[submodule "agent-summarizer"]
+	path = agent-summarizer
+	url = https://github.com/luisforni/agent-summarizer.git
+[submodule "agent-content-generator"]
+	path = agent-content-generator
+	url = https://github.com/luisforni/agent-content-generator.git
+[submodule "agent-orchestrator"]
+	path = agent-orchestrator
+	url = https://github.com/luisforni/agent-orchestrator.git
+[submodule "pipeline-web-ui"]
+	path = pipeline-web-ui
+	url = https://github.com/luisforni/pipeline-web-ui.git
